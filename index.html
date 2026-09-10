@@ -3,97 +3,91 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>岐轮城 · 三维运行验证器</title>
+<title>岐轮城 · 平面运行验证器 v0.5</title>
 <style>
-  :root{color-scheme:dark;--bg:#081019;--panel:rgba(8,16,25,.88);--line:#294155;--text:#e8f0f7;--muted:#8ea4b7;--accent:#7dd3fc;--warn:#ffd166}
-  *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--text)}
-  #app{position:fixed;inset:0}#scene{position:absolute;inset:0}
-  #header{position:absolute;left:18px;top:16px;z-index:5;pointer-events:none;text-shadow:0 2px 12px #000}
-  #header h1{margin:0;font-size:20px;letter-spacing:.08em}#header p{margin:5px 0 0;font-size:12px;color:#b6c5d3}
-  .panel{position:absolute;z-index:10;background:var(--panel);border:1px solid #294155;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.3);backdrop-filter:blur(10px)}
-  #controls{right:16px;top:16px;width:310px;padding:14px;max-height:calc(100vh - 116px);overflow:auto}
-  #timeline{left:16px;right:342px;bottom:16px;padding:12px 14px;display:flex;align-items:center;gap:10px}
-  .section{border-top:1px solid #263949;padding-top:11px;margin-top:11px}.section:first-child{border:0;margin:0;padding:0}
-  .section-title{font-size:12px;color:#9fb1c0;letter-spacing:.08em;margin-bottom:8px;text-transform:uppercase}
-  .row{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid #355166;background:#101e2a;color:#dbe8f2;padding:7px 9px;border-radius:8px;font-size:12px;cursor:pointer}.btn:hover{background:#173045}.btn.active{background:#1f4e67;border-color:#65b6df;color:#fff}.btn.primary{background:#225d78}.btn.small{padding:5px 8px}
-  label.toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:#c6d3de;margin:7px 0}label.toggle input{accent-color:#7dd3fc}
-  select,input[type=range]{width:100%}select{background:#0e1a24;color:#e7eef5;border:1px solid #31495d;border-radius:7px;padding:7px}
-  input[type=range]{accent-color:#7dd3fc}
-  .legend{display:grid;grid-template-columns:12px 1fr;gap:7px 8px;font-size:11px;color:#aebfcd;align-items:center}.sw{width:12px;height:12px;border-radius:3px;border:1px solid rgba(255,255,255,.22)}
-  .note{font-size:11px;line-height:1.55;color:#8ea4b7;background:#0c1720;border-radius:8px;padding:8px}
-  .metric{font-variant-numeric:tabular-nums;font-size:11px;color:#b8cad8}.metric b{color:#fff}
-  #timeLabel{min-width:66px;font-size:14px;font-weight:700;color:#fff}.grow{flex:1}
-  #hoverCard{position:absolute;z-index:20;display:none;pointer-events:none;min-width:180px;max-width:280px;padding:9px 10px;border-radius:9px;background:rgba(5,12,18,.94);border:1px solid #38566d;font-size:11px;line-height:1.45;box-shadow:0 10px 30px #0008}
-  #hoverCard b{font-size:12px;color:#fff}.tag{display:inline-block;margin-top:4px;padding:2px 5px;border-radius:4px;background:#173044;color:#9ed8f4}
-  #boot{position:absolute;inset:0;z-index:100;display:grid;place-items:center;background:#081019;color:#c9d6e0;font-size:14px}.spinner{width:30px;height:30px;border:3px solid #284151;border-top-color:#7dd3fc;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 10px}@keyframes spin{to{transform:rotate(360deg)}}
-  #error{display:none;max-width:640px;padding:24px;line-height:1.7}
-  @media(max-width:800px){#controls{width:260px}#timeline{right:292px}}
+:root{color-scheme:dark;--bg:#071019;--panel:rgba(8,16,25,.92);--line:#294155;--text:#eaf1f6;--muted:#90a5b5;--accent:#7dd3fc}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--text)}
+#app{position:fixed;inset:0}canvas{display:block}
+#cityCanvas{position:absolute;inset:0;width:100%;height:100%}
+#header{position:absolute;left:18px;top:16px;z-index:5;pointer-events:none;text-shadow:0 2px 12px #000}
+#header h1{margin:0;font-size:20px;letter-spacing:.06em}#header p{margin:5px 0 0;font-size:12px;color:#b6c5d3}
+.panel{position:absolute;z-index:10;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.32);backdrop-filter:blur(10px)}
+#controls{right:16px;top:16px;width:330px;padding:14px;max-height:calc(100vh - 122px);overflow:auto}
+#timeline{left:16px;right:362px;bottom:16px;padding:11px 14px;display:flex;gap:10px;align-items:center}
+.section{border-top:1px solid #243949;padding-top:11px;margin-top:11px}.section:first-child{border:0;padding-top:0;margin-top:0}.section-title{font-size:11px;color:#9fb1c0;letter-spacing:.10em;margin-bottom:8px;text-transform:uppercase}
+.row{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid #355166;background:#101e2a;color:#dbe8f2;padding:7px 9px;border-radius:8px;font-size:12px;cursor:pointer}.btn:hover{background:#173045}.btn.active{background:#1f4e67;border-color:#65b6df}.btn.primary{background:#225d78}.btn.small{padding:5px 8px}
+label.toggle,label.rangeLabel{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:#c6d3de;margin:7px 0}label.toggle input{accent-color:#7dd3fc}select,input[type=range]{width:100%}select{background:#0e1a24;color:#e7eef5;border:1px solid #31495d;border-radius:7px;padding:7px}input[type=range]{accent-color:#7dd3fc}
+.note{font-size:11px;line-height:1.55;color:#91a5b5;background:#0c1720;border-radius:8px;padding:8px}.metric{font-variant-numeric:tabular-nums;font-size:11px;color:#b8cad8}.metric b{color:#fff}
+.legend{display:grid;grid-template-columns:12px 1fr;gap:6px 8px;font-size:11px;color:#aebfcd;align-items:center}.sw{width:12px;height:12px;border-radius:3px;border:1px solid rgba(255,255,255,.22)}
+#profileWrap{margin-top:8px;background:#08131c;border:1px solid #233a4b;border-radius:8px;padding:6px}#profileCanvas{width:100%;height:145px}
+#timeLabel{min-width:62px;font-size:14px;font-weight:700}.grow{flex:1}
+#hoverCard{position:absolute;z-index:20;display:none;pointer-events:none;max-width:300px;padding:9px 10px;border-radius:9px;background:rgba(5,12,18,.96);border:1px solid #38566d;font-size:11px;line-height:1.5;box-shadow:0 10px 30px #0008}
+#hoverCard b{font-size:12px}.tag{display:inline-block;margin-top:4px;padding:2px 5px;border-radius:4px;background:#173044;color:#9ed8f4}
+@media(max-width:900px){#controls{width:290px}#timeline{right:322px}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 <div id="app">
-  <div id="scene"></div>
-  <div id="header"><h1>岐轮城 · 三维运行验证器</h1><p>结构沙盘 v0.4 · 复合生活组团 / 可组合运行段 / 换层试验 · 几何数量不反向成为正典</p></div>
+  <canvas id="cityCanvas"></canvas>
+  <div id="header"><h1>岐轮城 · 动态平面验证器</h1><p>v0.5 · 单层俯视为主 / 多层投影检查采光 / 几何参数不反向成为正典</p></div>
   <aside id="controls" class="panel">
     <div class="section">
-      <div class="section-title">观察模式</div>
+      <div class="section-title">观察层与模式</div>
+      <label class="toggle">当前高度层 <select id="levelSelect" style="width:128px"></select></label>
       <select id="viewMode">
-        <option value="full">完整城市</option><option value="level">单层观察</option><option value="section">垂直剖面</option><option value="skeleton">只看骨架</option><option value="voids">只看空隙</option>
+        <option value="function">功能分区</option>
+        <option value="sun">日照 / 上层投影</option>
+        <option value="outline">只看运行段轮廓</option>
       </select>
-      <label class="toggle">观察高度层 <select id="levelSelect" style="width:120px"></select></label>
-      <div class="row"><button class="btn small" data-cam="iso">轴测</button><button class="btn small" data-cam="top">俯视</button><button class="btn small" data-cam="side">侧视</button><button class="btn small" data-cam="home">祝遥区</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn small" id="fitBtn">重置视图</button><button class="btn small" id="focusZhuyao">祝遥辐带</button></div>
     </div>
+
     <div class="section">
-      <div class="section-title">显示内容</div>
-      <label class="toggle">中央定轴与环架 <input id="showSkeleton" type="checkbox" checked></label>
-      <label class="toggle">普通生活组团 <input id="showHomes" type="checkbox" checked></label>
+      <div class="section-title">显示</div>
+      <label class="toggle">相邻上层投影 <input id="showUpper" type="checkbox" checked></label>
+      <label class="toggle">相邻下层轮廓 <input id="showLower" type="checkbox"></label>
       <label class="toggle">固定辐向住宅带 <input id="showStable" type="checkbox" checked></label>
       <label class="toggle">主干交通带 <input id="showTraffic" type="checkbox" checked></label>
-      <label class="toggle">学校与公共服务 <input id="showService" type="checkbox" checked></label>
-      <label class="toggle">生产物流区 <input id="showIndustry" type="checkbox" checked></label>
-      <label class="toggle">采光/交换空隙 <input id="showVoids" type="checkbox"></label>
-      <label class="toggle">太阳与实时阴影 <input id="showSun" type="checkbox" checked></label>
+      <label class="toggle">运行段边界 <input id="showBorders" type="checkbox" checked></label>
     </div>
+
     <div class="section">
-      <div class="section-title">运行试算参数</div>
-      <label class="toggle">生活组团径向伸缩 <span class="metric"><b id="homeAmpLabel">11</b> u</span></label>
-      <input id="homeAmp" type="range" min="0" max="22" step="1" value="11">
-      <label class="toggle">公共服务区本地摆动 <span class="metric">±<b id="serviceAmpLabel">24</b>°</span></label>
-      <input id="serviceAmp" type="range" min="4" max="45" step="1" value="24">
-      <div class="note" style="margin-top:8px">这些数值是验证参数，不是正典数值。公共服务区的滑杆现在表示实际最大摆动角，不再暗中缩小。</div>
+      <div class="section-title">运行试算</div>
+      <label class="rangeLabel">普通生活区径向伸缩 <span class="metric"><b id="homeAmpLabel">8</b> u</span></label>
+      <input id="homeAmp" type="range" min="0" max="18" value="8" step="1">
+      <label class="rangeLabel">公共服务段本地摆动 <span class="metric">±<b id="serviceAmpLabel">14</b>°</span></label>
+      <input id="serviceAmp" type="range" min="0" max="30" value="14" step="1">
+      <div class="note" style="margin-top:8px">这些是网页验证参数。普通住宅占绝大多数面积，只做有限径向伸缩；公共服务段只在本地服务范围内调位。</div>
     </div>
+
     <div class="section">
-      <div class="section-title">长周期换层试验</div>
-      <label class="toggle">显示组合运行段换层 <input id="showTransfer" type="checkbox"></label>
-      <label class="toggle">换层进度 <span class="metric"><b id="transferLabel">0%</b></span></label>
-      <input id="transferPhase" type="range" min="0" max="1" step="0.01" value="0">
-      <div class="note" style="margin-top:8px">验证性假设：运行段先向内收拢到换层接口，再垂直移动，最后接入另一高度。仅用于测试“外环必须是组合结构”是否更合理。</div>
+      <div class="section-title">简化垂直剖面</div>
+      <label class="rangeLabel">剖面方向 <span class="metric"><b id="sectionAngleLabel">30</b>°</span></label>
+      <input id="sectionAngle" type="range" min="0" max="359" value="30" step="1">
+      <div id="profileWrap"><canvas id="profileCanvas"></canvas></div>
+      <div class="note" style="margin-top:8px">剖面只显示各高度层在该方向上的伸出与内收，不表示楼房真实高度。它专门检查岐轮是否被误画成规则圆柱或锥体。</div>
     </div>
-    <div class="section">
-      <div class="section-title">居民路径</div>
-      <select id="routeSelect"><option value="none">不显示</option><option value="zhuyao">祝遥：住宅 → 学校</option><option value="ordinary">普通学生：A1 → 学校</option><option value="central">普通居民：住宅 → 中央核心</option></select>
-      <div class="note" id="routeNote" style="margin-top:8px">选择路径后，可拖动一天时间观察住宅和学校换位后路线如何变化。</div>
-    </div>
+
     <div class="section">
       <div class="section-title">图例</div>
       <div class="legend">
-        <span class="sw" style="background:#8796a5"></span><span>固定细骨架 / 环轨 / 接口</span>
-        <span class="sw" style="background:#5e93ad"></span><span>普通生活组团（住宅 + 日常商业 + 社区服务）</span>
-        <span class="sw" style="background:#d7b36b"></span><span>固定辐向住宅带（低密度、高稳定）</span>
-        <span class="sw" style="background:#34495e"></span><span>主干交通净空</span>
-        <span class="sw" style="background:#77b989"></span><span>复合公共服务区（学校 + 商业 + 医疗 + 体育等）</span>
-        <span class="sw" style="background:#a8766b"></span><span>生产物流</span>
-        <span class="sw" style="background:#6fe8ff55"></span><span>受保护采光与交换空隙</span>
+        <span class="sw" style="background:#566773"></span><span>稳定核心区 / 中央定轴接口</span>
+        <span class="sw" style="background:#4f8ca7"></span><span>普通生活区：住宅 + 邻里商业 + 社区服务</span>
+        <span class="sw" style="background:#6da879"></span><span>复合公共服务 / 较大型商业：学校 + 市场 + 医疗 + 体育等</span>
+        <span class="sw" style="background:#9c6a60"></span><span>生产物流：工厂 + 维修 + 仓储 + 货运接口</span>
+        <span class="sw" style="background:#788c98"></span><span>外缘交通 / 维护 / 城防接口</span>
+        <span class="sw" style="background:#d7b36b"></span><span>极细固定辐向高稳定住宅带</span>
+        <span class="sw" style="background:#263c4c"></span><span>主干交通净空</span>
+        <span class="sw" style="background:#111820"></span><span>上层投影遮挡</span>
       </div>
     </div>
-    <div class="section note">正典约束：固定的是承力骨架、辐桥、主干轨道与接口，不把外围画成不可拆的实体巨环；生活环群本身包含住宅、日常商业和社区服务；学校与大型商业、医疗、体育等组成较大的公共服务运行段。紫色换层机构仅为验证性推演。</div>
+
+    <div class="section note">当前正典：普通生活区是面积主体；固定辐向高稳定住宅带只占很小比例；从中心向外常见核心、生活、公共服务/较大商业、生产物流、外缘接口等四至五级关系，但各运行段互相咬合而非规则同心圆。不同高度层在不同方向凹凸错位，用于改善采光、通风和调度。</div>
   </aside>
-  <div id="timeline" class="panel"><button id="play" class="btn primary">▶ 播放</button><span id="timeLabel">07:30</span><input id="time" class="grow" type="range" min="0" max="24" step="0.05" value="7.5"><span class="metric">住宅伸缩 <b id="moveMetric">0%</b></span><span class="metric">公共服务区位置 <b id="schoolMetric">中段</b></span></div>
+
+  <div id="timeline" class="panel"><button id="play" class="btn primary">▶ 播放</button><span id="timeLabel">07:30</span><input id="time" class="grow" type="range" min="0" max="24" step="0.05" value="7.5"><span class="metric">住宅伸缩 <b id="moveMetric">0</b></span><span class="metric">服务段偏移 <b id="serviceMetric">0°</b></span></div>
   <div id="hoverCard"></div>
-  <div id="boot"><div id="loading"><div class="spinner"></div>正在构建岐轮结构…</div><div id="error"></div></div>
 </div>
-<script src="./app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
