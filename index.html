@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>岐轮城 · 三维运行验证器</title>
+<style>
+  :root{color-scheme:dark;--bg:#081019;--panel:rgba(8,16,25,.88);--line:#294155;--text:#e8f0f7;--muted:#8ea4b7;--accent:#7dd3fc;--warn:#ffd166}
+  *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--text)}
+  #app{position:fixed;inset:0}#scene{position:absolute;inset:0}
+  #header{position:absolute;left:18px;top:16px;z-index:5;pointer-events:none;text-shadow:0 2px 12px #000}
+  #header h1{margin:0;font-size:20px;letter-spacing:.08em}#header p{margin:5px 0 0;font-size:12px;color:#b6c5d3}
+  .panel{position:absolute;z-index:10;background:var(--panel);border:1px solid #294155;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.3);backdrop-filter:blur(10px)}
+  #controls{right:16px;top:16px;width:310px;padding:14px;max-height:calc(100vh - 116px);overflow:auto}
+  #timeline{left:16px;right:342px;bottom:16px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+  .section{border-top:1px solid #263949;padding-top:11px;margin-top:11px}.section:first-child{border:0;margin:0;padding:0}
+  .section-title{font-size:12px;color:#9fb1c0;letter-spacing:.08em;margin-bottom:8px;text-transform:uppercase}
+  .row{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid #355166;background:#101e2a;color:#dbe8f2;padding:7px 9px;border-radius:8px;font-size:12px;cursor:pointer}.btn:hover{background:#173045}.btn.active{background:#1f4e67;border-color:#65b6df;color:#fff}.btn.primary{background:#225d78}.btn.small{padding:5px 8px}
+  label.toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:#c6d3de;margin:7px 0}label.toggle input{accent-color:#7dd3fc}
+  select,input[type=range]{width:100%}select{background:#0e1a24;color:#e7eef5;border:1px solid #31495d;border-radius:7px;padding:7px}
+  input[type=range]{accent-color:#7dd3fc}
+  .legend{display:grid;grid-template-columns:12px 1fr;gap:7px 8px;font-size:11px;color:#aebfcd;align-items:center}.sw{width:12px;height:12px;border-radius:3px;border:1px solid rgba(255,255,255,.22)}
+  .note{font-size:11px;line-height:1.55;color:#8ea4b7;background:#0c1720;border-radius:8px;padding:8px}
+  .metric{font-variant-numeric:tabular-nums;font-size:11px;color:#b8cad8}.metric b{color:#fff}
+  #timeLabel{min-width:66px;font-size:14px;font-weight:700;color:#fff}.grow{flex:1}
+  #hoverCard{position:absolute;z-index:20;display:none;pointer-events:none;min-width:180px;max-width:280px;padding:9px 10px;border-radius:9px;background:rgba(5,12,18,.94);border:1px solid #38566d;font-size:11px;line-height:1.45;box-shadow:0 10px 30px #0008}
+  #hoverCard b{font-size:12px;color:#fff}.tag{display:inline-block;margin-top:4px;padding:2px 5px;border-radius:4px;background:#173044;color:#9ed8f4}
+  #boot{position:absolute;inset:0;z-index:100;display:grid;place-items:center;background:#081019;color:#c9d6e0;font-size:14px}.spinner{width:30px;height:30px;border:3px solid #284151;border-top-color:#7dd3fc;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 10px}@keyframes spin{to{transform:rotate(360deg)}}
+  #error{display:none;max-width:640px;padding:24px;line-height:1.7}
+  @media(max-width:800px){#controls{width:260px}#timeline{right:292px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+<div id="app">
+  <div id="scene"></div>
+  <div id="header"><h1>岐轮城 · 三维运行验证器</h1><p>结构沙盘 v0.2 · 几何数量仅用于验证，不反向成为正典</p></div>
+  <aside id="controls" class="panel">
+    <div class="section">
+      <div class="section-title">观察模式</div>
+      <select id="viewMode">
+        <option value="full">完整城市</option><option value="level">单层观察</option><option value="section">垂直剖面</option><option value="skeleton">只看骨架</option><option value="voids">只看空隙</option>
+      </select>
+      <label class="toggle">观察高度层 <select id="levelSelect" style="width:120px"></select></label>
+      <div class="row"><button class="btn small" data-cam="iso">轴测</button><button class="btn small" data-cam="top">俯视</button><button class="btn small" data-cam="side">侧视</button><button class="btn small" data-cam="home">祝遥区</button></div>
+    </div>
+    <div class="section">
+      <div class="section-title">显示内容</div>
+      <label class="toggle">中央定轴与环架 <input id="showSkeleton" type="checkbox" checked></label>
+      <label class="toggle">普通可迁住宅 <input id="showHomes" type="checkbox" checked></label>
+      <label class="toggle">固定辐向住宅带 <input id="showStable" type="checkbox" checked></label>
+      <label class="toggle">主干交通带 <input id="showTraffic" type="checkbox" checked></label>
+      <label class="toggle">学校与公共服务 <input id="showService" type="checkbox" checked></label>
+      <label class="toggle">生产物流区 <input id="showIndustry" type="checkbox" checked></label>
+      <label class="toggle">采光/交换空隙 <input id="showVoids" type="checkbox"></label>
+      <label class="toggle">太阳与实时阴影 <input id="showSun" type="checkbox" checked></label>
+    </div>
+    <div class="section">
+      <div class="section-title">居民路径</div>
+      <select id="routeSelect"><option value="none">不显示</option><option value="zhuyao">祝遥：住宅 → 学校</option><option value="ordinary">普通学生：A1 → 学校</option><option value="central">普通居民：住宅 → 中央核心</option></select>
+      <div class="note" id="routeNote" style="margin-top:8px">选择路径后，可拖动一天时间观察住宅和学校换位后路线如何变化。</div>
+    </div>
+    <div class="section">
+      <div class="section-title">图例</div>
+      <div class="legend">
+        <span class="sw" style="background:#8796a5"></span><span>固定骨架 / 环架</span>
+        <span class="sw" style="background:#5e93ad"></span><span>普通可迁住宅组团</span>
+        <span class="sw" style="background:#d7b36b"></span><span>固定辐向住宅带（高稳定）</span>
+        <span class="sw" style="background:#34495e"></span><span>主干交通净空</span>
+        <span class="sw" style="background:#77b989"></span><span>学校 / 公共服务</span>
+        <span class="sw" style="background:#a8766b"></span><span>生产物流</span>
+        <span class="sw" style="background:#6fe8ff55"></span><span>受保护采光与交换空隙</span>
+      </div>
+    </div>
+    <div class="section note">正典约束：环架闭合不等于模块整圈周转；普通住宅与学校只在所属运行段内局部迁位；固定辐向住宅带不参与日常伸缩；中间多数生活高度功能大体同质。</div>
+  </aside>
+  <div id="timeline" class="panel"><button id="play" class="btn primary">▶ 播放</button><span id="timeLabel">07:30</span><input id="time" class="grow" type="range" min="0" max="24" step="0.05" value="7.5"><span class="metric">住宅伸缩 <b id="moveMetric">0%</b></span><span class="metric">学校位置 <b id="schoolMetric">中段</b></span></div>
+  <div id="hoverCard"></div>
+  <div id="boot"><div id="loading"><div class="spinner"></div>正在构建岐轮结构…</div><div id="error"></div></div>
+</div>
+<script>
+(function(){
+  const boot=document.getElementById('boot'), error=document.getElementById('error');
+  if(!window.THREE || !THREE.OrbitControls){
+    document.getElementById('loading').style.display='none'; error.style.display='block';
+    error.innerHTML='<b>Three.js 未能加载。</b><br>这个单文件页面本身完整，但首次打开需要网络访问 jsDelivr CDN。请检查网络后刷新。'; return;
+  }
+  const C={skeleton:0x8796a5,ring:0x516879,home:0x5e93ad,stable:0xd7b36b,traffic:0x34495e,service:0x77b989,industry:0xa8766b,void:0x6fe8ff,axis:0xaeb8c2,route:0xffe084};
+  const scene=new THREE.Scene(); scene.background=new THREE.Color(0x071019); scene.fog=new THREE.FogExp2(0x071019,.0020);
+  const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputEncoding=THREE.sRGBEncoding; document.getElementById('scene').appendChild(renderer.domElement);
+  const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,2000); camera.position.set(210,155,230);
+  const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=.07; controls.target.set(0,40,0); controls.maxDistance=650; controls.minDistance=35;
+  scene.add(new THREE.HemisphereLight(0xa8cbea,0x15202a,.75));
+  const sun=new THREE.DirectionalLight(0xfff3d1,1.55); sun.position.set(-160,190,80); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-260;sun.shadow.camera.right=260;sun.shadow.camera.top=260;sun.shadow.camera.bottom=-260;sun.shadow.camera.near=.1;sun.shadow.camera.far=600; scene.add(sun);
+  const floor=new THREE.Mesh(new THREE.CylinderGeometry(155,175,8,96),new THREE.MeshStandardMaterial({color:0x111b22,roughness:.9,metalness:.15})); floor.position.y=-8; floor.receiveShadow=true; scene.add(floor);
+  const grid=new THREE.GridHelper(420,42,0x274051,0x172733); grid.position.y=-3.8; scene.add(grid);
+
+  const groups={skeleton:new THREE.Group(),homes:new THREE.Group(),stable:new THREE.Group(),traffic:new THREE.Group(),service:new THREE.Group(),industry:new THREE.Group(),voids:new THREE.Group(),routes:new THREE.Group()}; Object.values(groups).forEach(g=>scene.add(g));
+  const levelYs=[4,24,44,64,84,104,124], levelCount=levelYs.length, levelR=[72,83,94,104,113,121,128];
+  const interactive=[], movers=[]; let schoolObj=null, routeLine=null, currentTime=7.5;
+  function mat(color,opts={}){return new THREE.MeshStandardMaterial({color,roughness:opts.roughness??.72,metalness:opts.metalness??.15,transparent:!!opts.transparent,opacity:opts.opacity??1,side:THREE.DoubleSide,depthWrite:opts.depthWrite??true});}
+  function add(mesh,group,name,desc,type){mesh.userData={name,desc,type};mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);if(name)interactive.push(mesh);return mesh}
+  function box(w,h,d,color,group,pos,name,desc,type,opacity=1){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color,{transparent:opacity<1,opacity}));m.position.set(...pos);return add(m,group,name,desc,type)}
+  function polar(r,a,y){return [Math.cos(a)*r,y,Math.sin(a)*r]}
+  function orientRadial(o,a){o.rotation.y=-a;return o}
+
+  const axis=new THREE.Group(); groups.skeleton.add(axis);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(33,46,28,24),mat(0x788896,{metalness:.35}));base.position.y=10;base.castShadow=true;base.receiveShadow=true;axis.add(base);base.userData={name:'中央定轴下部',desc:'重型铁路、最大质量吞吐、核心市政与垂直升运的稳定基础。',type:'skeleton'};interactive.push(base);
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(20,28,118,24),mat(C.axis,{metalness:.38}));shaft.position.y=77;shaft.castShadow=true;axis.add(shaft);shaft.userData={name:'中央定轴',desc:'长期固定的垂直交通与承力核心。大型医院、大学、城市级设施与部分高稳定住宅靠近这里。',type:'skeleton'};interactive.push(shaft);
+  const crown=new THREE.Mesh(new THREE.CylinderGeometry(37,19,10,32),mat(0x8aa2b4,{metalness:.4}));crown.position.y=142;axis.add(crown);crown.userData={name:'顶部空运中心',desc:'城市与天空的边界设施。大型空船、航空器、紧急物资和快速客运在此接入。',type:'skeleton'};interactive.push(crown);
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;const p=polar(43,a,142);box(13,2.2,5,0xb7c5d0,groups.skeleton,p,null,null,'skeleton');}
+
+  levelYs.forEach((y,li)=>{
+    const r=levelR[li];
+    const tor=new THREE.Mesh(new THREE.TorusGeometry(r,2.0,8,96),mat(C.ring,{metalness:.3}));tor.rotation.x=Math.PI/2;tor.position.y=y-3;tor.castShadow=true;tor.receiveShadow=true;groups.skeleton.add(tor);tor.userData={name:`第 ${li+1} 高度环架`,desc:'闭合承力与连接骨架。闭合几何不意味着住宅或学校每天绕城一周。',type:'skeleton'};interactive.push(tor);
+    for(let s=0;s<8;s++){const a=s*Math.PI/4;const len=r-25;const p=polar(25+len/2,a,y-3);const bridge=box(len,1.4,2.5,C.skeleton,groups.skeleton,p,null,null,'skeleton');orientRadial(bridge,a);}
+  });
+
+  const stableAngles=[0,Math.PI/2,Math.PI,Math.PI*1.5];
+  stableAngles.forEach((a,si)=>levelYs.forEach((y,li)=>{
+    const r0=31,r1=levelR[li]+26,len=r1-r0;const p=polar((r0+r1)/2,a,y+2);
+    const deck=box(len,2.2,8,C.stable,groups.stable,p,`固定辐向住宅带 ${si+1} · L${li+1}`,'不参加普通住宅的日常伸缩。沿途住宅、商铺与社区设施连续向中央连接。','stable');orientRadial(deck,a);
+    for(let k=0;k<Math.floor(len/14);k++){
+      const rr=r0+8+k*14, side=(k%2?1:-1);const q=polar(rr,a,y+7+(k%3)*1.3);q[0]+=Math.cos(a+Math.PI/2)*side*5.2;q[2]+=Math.sin(a+Math.PI/2)*side*5.2;
+      const b=box(8,8+(k%3)*2,6,0xc6a664,groups.stable,q,null,null,'stable');orientRadial(b,a);
+    }
+  }));
+
+  stableAngles.forEach((a,si)=>levelYs.forEach((y,li)=>{
+    const offA=a+0.075, r0=32,r1=levelR[li]+22,len=r1-r0,p=polar((r0+r1)/2,offA,y+1.2);
+    const road=box(len,.9,7,C.traffic,groups.traffic,p,`主干交通带 ${si+1}`,'高流量通勤、撤离、消防、大型运输与模块迁位需要的长期净空，不布置连续住宅。','traffic');orientRadial(road,offA);
+  }));
+
+  levelYs.forEach((y,li)=>{
+    const baseR=levelR[li]+5;
+    for(let seg=0;seg<12;seg++){
+      const a=seg*Math.PI*2/12 + 0.16 + (li%2)*.04;
+      if(stableAngles.some(sa=>Math.abs(Math.atan2(Math.sin(a-sa),Math.cos(a-sa)))<.16)) continue;
+      const g=new THREE.Group();groups.homes.add(g);const phase=(seg*.77+li*.39)%6.28;g.userData={baseR,a,phase,li,type:'homeMover'};movers.push(g);
+      const p=polar(baseR,a,y+2);g.position.set(...p);g.rotation.y=-a;
+      const deck=new THREE.Mesh(new THREE.BoxGeometry(23,2.3,12),mat(C.home));deck.castShadow=true;deck.receiveShadow=true;g.add(deck);deck.userData={name:`普通住宅组团 L${li+1}-${seg+1}`,desc:'属于生活运行段。邻里关系相对稳定，但组团可在有限范围内径向伸缩和换位，以交换采光、接驳与维护条件。',type:'home'};interactive.push(deck);
+      for(let k=-1;k<=1;k++){const b=new THREE.Mesh(new THREE.BoxGeometry(5.2,7+((seg+k+li)%4)*2,5.5),mat(0x6d9bb0));b.position.set(k*7,5,0);b.castShadow=true;b.receiveShadow=true;g.add(b)}
+    }
+  });
+
+  const serviceLevel=3, serviceY=levelYs[serviceLevel], serviceR=levelR[serviceLevel]+10;
+  const sg=new THREE.Group(); groups.service.add(sg); schoolObj=sg; sg.userData={baseR:serviceR,baseA:.60};
+  const school=box(26,6,15,C.service,sg,[0,0,0],'片区学校','服务若干相邻生活运行段。早晚可调整近接节点，但不会整城环行。','service');
+  for(let i=0;i<5;i++){const p=polar(levelR[(i+1)%levelCount]+10,1.08+i*.82,levelYs[(i+1)%levelCount]+3);box(18,5,12,0x649d77,groups.service,p,'片区公共服务','片区医疗、体育训练、图书馆等共享设施，在有限服务段内调整位置。','service');}
+
+  for(let i=0;i<7;i++){const li=i%3,a=2.3+i*.46,r=levelR[li]+18,p=polar(r,a,levelYs[li]+3);const b=box(22,6+(i%3)*3,15,C.industry,groups.industry,p,'生产物流模块','中型工厂、装配、维修、仓储与货运接口。局部迁位服务于工序和物流，不与普通住宅混为一体。','industry');orientRadial(b,a)}
+
+  stableAngles.forEach((a,si)=>{
+    const p=polar(105,a,65);const v=box(120,138,15,C.void,groups.voids,p,`长期开放间隙 ${si+1}`,'上下层错位和净空共同保护的采光、通风、维修、飞行、交换与疏散空间。','void',.10);orientRadial(v,a);
+  });
+  groups.voids.visible=false;
+
+  function setRoute(kind){groups.routes.clear(); routeLine=null; if(kind==='none')return;
+    const t=currentTime, homeShift=calcMove(t), schoolA=calcSchoolA(t), y=serviceY+10; let pts=[];
+    if(kind==='zhuyao'){
+      const a=0, start=new THREE.Vector3(...polar(112,a,y)); const mid=new THREE.Vector3(...polar(55,a,y)); const end=new THREE.Vector3(...polar(serviceR,schoolA,y)); pts=[start,mid,end]; document.getElementById('routeNote').textContent='祝遥住在固定辐向住宅带，住宅和道路本体不随普通轮历伸缩；学校只在本服务扇区内移动，所以通学距离波动较小。';
+    }else if(kind==='ordinary'){
+      const a=.95, rr=112+homeShift*9; const start=new THREE.Vector3(...polar(rr,a,y)); const junction=new THREE.Vector3(...polar(70,.90,y)); const end=new THREE.Vector3(...polar(serviceR,schoolA,y)); pts=[start,junction,end]; document.getElementById('routeNote').textContent='普通学生住宅可能从 A1 类节点局部换到 A3 类节点。路线随轮历更新，但不会出现住宅跑到城市另一端而无法回家。';
+    }else{
+      const a=2.0, rr=112+homeShift*8; pts=[new THREE.Vector3(...polar(rr,a,y)),new THREE.Vector3(...polar(70,a,y)),new THREE.Vector3(24,y,0)]; document.getElementById('routeNote').textContent='普通居民通常先从邻里进入无连续建筑的主干交通带，再沿固定交通骨架进入中央稳定核心。';
+    }
+    const geo=new THREE.BufferGeometry().setFromPoints(pts);routeLine=new THREE.Line(geo,new THREE.LineBasicMaterial({color:C.route,linewidth:4}));groups.routes.add(routeLine);
+    pts.forEach((p,i)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(2.1,16,16),mat(i===0?0xffcc66:0xffffcc));m.position.copy(p);groups.routes.add(m)});
+  }
+
+  function calcMove(t){return Math.sin((t-5.5)/24*Math.PI*2)*.75 + Math.sin((t-12)/12*Math.PI*2)*.25}
+  function calcSchoolA(t){const morning=.60, afternoon=.94; const u=(Math.sin((t-10)/24*Math.PI*2)+1)/2; return THREE.MathUtils.lerp(morning,afternoon,u);}
+  function updateTime(t){currentTime=t;
+    const mv=calcMove(t); movers.forEach((g,i)=>{const local=mv*.72+Math.sin(t*.43+g.userData.phase)*.28;const r=g.userData.baseR+local*(5+(g.userData.li%3)*1.2);const p=polar(r,g.userData.a,levelYs[g.userData.li]+2);g.position.set(...p)});
+    const a=calcSchoolA(t),p=polar(serviceR,a,serviceY+5);schoolObj.position.set(...p);schoolObj.rotation.y=-a;
+    const sunAngle=(t-6)/24*Math.PI*2;sun.position.set(Math.cos(sunAngle)*210,Math.max(12,Math.sin(sunAngle)*185),Math.sin(sunAngle*.92)*150);sun.intensity=(t<5||t>20)?.28:1.55;
+    const hh=Math.floor(t)%24,mm=Math.floor((t-hh)*60);document.getElementById('timeLabel').textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');document.getElementById('moveMetric').textContent=Math.round(mv*100)+'%';document.getElementById('schoolMetric').textContent=a<.70?'近稳定辐带':a>.84?'服务段外侧':'服务段中段';
+    setRoute(document.getElementById('routeSelect').value);
+  }
+
+  const levelSelect=document.getElementById('levelSelect'); levelYs.forEach((_,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`L${i+1}`;if(i===3)o.selected=true;levelSelect.appendChild(o)});
+  function applyView(){const mode=document.getElementById('viewMode').value,li=+levelSelect.value;
+    groups.skeleton.visible=document.getElementById('showSkeleton').checked;groups.homes.visible=document.getElementById('showHomes').checked;groups.stable.visible=document.getElementById('showStable').checked;groups.traffic.visible=document.getElementById('showTraffic').checked;groups.service.visible=document.getElementById('showService').checked;groups.industry.visible=document.getElementById('showIndustry').checked;groups.voids.visible=document.getElementById('showVoids').checked;sun.visible=document.getElementById('showSun').checked;
+    Object.values(groups).forEach(g=>g.children.forEach(o=>{if(o.userData && o.userData._baseVisible===undefined)o.userData._baseVisible=o.visible}));
+    scene.traverse(o=>{if(o.userData && o.userData._viewHidden){o.visible=true;o.userData._viewHidden=false}});
+    if(mode==='skeleton'){groups.homes.visible=false;groups.stable.visible=false;groups.traffic.visible=false;groups.service.visible=false;groups.industry.visible=false;groups.voids.visible=false;groups.skeleton.visible=true;}
+    if(mode==='voids'){groups.homes.visible=false;groups.stable.visible=false;groups.traffic.visible=false;groups.service.visible=false;groups.industry.visible=false;groups.skeleton.visible=true;groups.voids.visible=true;}
+    if(mode==='level'){
+      [groups.homes,groups.stable,groups.traffic,groups.service,groups.industry].forEach(g=>g.traverse(o=>{if(o.isMesh){const wy=new THREE.Vector3();o.getWorldPosition(wy);if(Math.abs(wy.y-levelYs[li])>15){o.visible=false;o.userData._viewHidden=true}}}));
+    }
+    if(mode==='section'){
+      [groups.homes,groups.stable,groups.traffic,groups.service,groups.industry].forEach(g=>g.traverse(o=>{if(o.isMesh){const wp=new THREE.Vector3();o.getWorldPosition(wp);if(wp.z<0 || Math.abs(wp.z)>72){o.visible=false;o.userData._viewHidden=true}}}));
+    }
+  }
+  document.querySelectorAll('#controls input[type=checkbox]').forEach(x=>x.addEventListener('change',applyView));document.getElementById('viewMode').addEventListener('change',applyView);levelSelect.addEventListener('change',applyView);document.getElementById('routeSelect').addEventListener('change',()=>setRoute(document.getElementById('routeSelect').value));
+  document.querySelectorAll('[data-cam]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.cam;if(k==='iso'){camera.position.set(210,155,230);controls.target.set(0,45,0)}if(k==='top'){camera.position.set(0,390,.01);controls.target.set(0,35,0)}if(k==='side'){camera.position.set(340,75,0);controls.target.set(0,55,0)}if(k==='home'){camera.position.set(160,88,125);controls.target.set(85,64,0)}controls.update()}));
+  const timeEl=document.getElementById('time');timeEl.addEventListener('input',()=>updateTime(+timeEl.value));let playing=false,last=performance.now();document.getElementById('play').addEventListener('click',e=>{playing=!playing;e.currentTarget.textContent=playing?'Ⅱ 暂停':'▶ 播放'});
+
+  const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),card=document.getElementById('hoverCard');renderer.domElement.addEventListener('pointermove',ev=>{mouse.x=ev.clientX/innerWidth*2-1;mouse.y=-(ev.clientY/innerHeight*2-1);ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects(interactive.filter(o=>o.visible),true);const hit=hits.find(h=>h.object.userData&&h.object.userData.name);if(hit){const d=hit.object.userData;card.style.display='block';card.style.left=Math.min(ev.clientX+14,innerWidth-300)+'px';card.style.top=Math.min(ev.clientY+14,innerHeight-120)+'px';card.innerHTML=`<b>${d.name}</b><br>${d.desc||''}<br><span class="tag">${d.type||'结构'}</span>`}else card.style.display='none'});
+
+  window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+  updateTime(currentTime);applyView();boot.style.display='none';
+  function animate(now){requestAnimationFrame(animate);if(playing){const dt=(now-last)/1000;let t=(+timeEl.value+dt*1.2)%24;timeEl.value=t;updateTime(t)}last=now;controls.update();renderer.render(scene,camera)}requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>
