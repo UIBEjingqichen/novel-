@@ -14,7 +14,7 @@
   const floor=new THREE.Mesh(new THREE.CylinderGeometry(155,175,8,96),new THREE.MeshStandardMaterial({color:0x111b22,roughness:.9,metalness:.15})); floor.position.y=-8; floor.receiveShadow=true; scene.add(floor);
   const grid=new THREE.GridHelper(420,42,0x274051,0x172733); grid.position.y=-3.8; scene.add(grid);
 
-  const groups={skeleton:new THREE.Group(),homes:new THREE.Group(),stable:new THREE.Group(),traffic:new THREE.Group(),service:new THREE.Group(),industry:new THREE.Group(),voids:new THREE.Group(),routes:new THREE.Group()}; Object.values(groups).forEach(g=>scene.add(g));
+  const groups={skeleton:new THREE.Group(),homes:new THREE.Group(),stable:new THREE.Group(),traffic:new THREE.Group(),service:new THREE.Group(),industry:new THREE.Group(),voids:new THREE.Group(),routes:new THREE.Group(),transfer:new THREE.Group()}; Object.values(groups).forEach(g=>scene.add(g));
   const levelYs=[4,24,44,64,84,104,124], levelR=[74,86,98,109,119,128,136];
   const interactive=[], movers=[]; let schoolObj=null, routeLine=null, currentTime=7.5;
   function mat(color,opts={}){return new THREE.MeshStandardMaterial({color,roughness:opts.roughness??.72,metalness:opts.metalness??.15,transparent:!!opts.transparent,opacity:opts.opacity??1,side:THREE.DoubleSide,depthWrite:opts.depthWrite??true});}
@@ -42,16 +42,16 @@
   const stableAngles=[0,Math.PI/2,Math.PI,Math.PI*1.5];
   stableAngles.forEach((a,si)=>levelYs.forEach((y,li)=>{
     const r0=31,r1=levelR[li]+26,len=r1-r0;const p=polar((r0+r1)/2,a,y+2);
-    const deck=box(len,2.2,13,C.stable,groups.stable,p,`固定辐向住宅带 ${si+1} · L${li+1}`,'不参加普通住宅的日常伸缩。沿途住宅、商铺与社区设施连续向中央连接。','stable');orientRadial(deck,a);
-    for(let k=0;k<Math.floor(len/14);k++){
-      const rr=r0+8+k*14, side=(k%2?1:-1);const q=polar(rr,a,y+7+(k%3)*1.3);q[0]+=Math.cos(a+Math.PI/2)*side*7.2;q[2]+=Math.sin(a+Math.PI/2)*side*7.2;
-      const b=box(8,8+(k%3)*2,6,0xc6a664,groups.stable,q,null,null,'stable');orientRadial(b,a);
+    const deck=box(len,2.2,22,C.stable,groups.stable,p,`固定辐向住宅带 ${si+1} · L${li+1}`,'不参加普通住宅的日常伸缩。沿途住宅、商铺与社区设施连续向中央连接。','stable');orientRadial(deck,a);
+    for(let k=0;k<Math.floor(len/18);k++){
+      const rr=r0+10+k*18, side=(k%2?1:-1);const q=polar(rr,a,y+7+(k%3)*1.3);q[0]+=Math.cos(a+Math.PI/2)*side*11.5;q[2]+=Math.sin(a+Math.PI/2)*side*11.5;
+      const b=box(10,6+(k%3)*1.5,8,0xc6a664,groups.stable,q,null,null,'stable');orientRadial(b,a);
     }
   }));
 
   stableAngles.forEach((a,si)=>levelYs.forEach((y,li)=>{
-    const offA=a+0.085, r0=32,r1=levelR[li]+25,len=r1-r0,p=polar((r0+r1)/2,offA,y+1.2);
-    const road=box(len,.9,9,C.traffic,groups.traffic,p,`主干交通带 ${si+1}`,'高流量通勤、撤离、消防、大型运输与模块迁位需要的长期净空，不布置连续住宅。','traffic');orientRadial(road,offA);
+    const offA=a+0.14, r0=32,r1=levelR[li]+25,len=r1-r0,p=polar((r0+r1)/2,offA,y+1.2);
+    const road=box(len,.9,12,C.traffic,groups.traffic,p,`主干交通带 ${si+1}`,'高流量通勤、撤离、消防、大型运输与模块迁位需要的长期净空，不布置连续住宅。','traffic');orientRadial(road,offA);
   }));
 
   levelYs.forEach((y,li)=>{
@@ -61,25 +61,25 @@
       if(stableAngles.some(sa=>Math.abs(Math.atan2(Math.sin(a-sa),Math.cos(a-sa)))<.20)) continue;
       const g=new THREE.Group();groups.homes.add(g);const phase=(seg*.77+li*.39)%6.28;g.userData={baseR,a,phase,li,type:'homeMover'};movers.push(g);
       const p=polar(baseR,a,y+2);g.position.set(...p);g.rotation.y=-a;
-      const deck=new THREE.Mesh(new THREE.BoxGeometry(36,2.6,34),mat(C.home));deck.castShadow=true;deck.receiveShadow=true;g.add(deck);
+      const deck=new THREE.Mesh(new THREE.BoxGeometry(44,2.6,46),mat(C.home));deck.castShadow=true;deck.receiveShadow=true;g.add(deck);
       deck.userData={name:`生活组团 L${li+1}-${seg+1}`,desc:'完整居民邻里：住宅、餐饮、便利商业、社区服务和内部公共空间共同迁位。它不是一栋小住宅，也不会因公共服务区离开就变成空壳。',type:'home'};interactive.push(deck);
-      const housePos=[[-11,-10],[-2,-11],[8,-10],[-11,2],[9,2],[-8,11],[3,11],[12,10]];
-      housePos.forEach((q,k)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(6.5,9+((seg+k+li)%5)*2.2,6.5),mat(k%3===0?0x79a7b8:0x6797ac));b.position.set(q[0],6,q[1]);b.castShadow=true;b.receiveShadow=true;g.add(b)});
-      const commerce=new THREE.Mesh(new THREE.BoxGeometry(8,4.5,27),mat(0x789b99));commerce.position.set(-15,3.3,0);commerce.castShadow=true;commerce.receiveShadow=true;g.add(commerce);
-      const court=new THREE.Mesh(new THREE.BoxGeometry(8,.35,9),mat(0x526c61));court.position.set(1,3.05,0);court.receiveShadow=true;g.add(court);
+      const housePos=[[-15,-16],[-5,-17],[6,-16],[15,-15],[-15,-5],[-4,-5],[7,-5],[15,-3],[-14,8],[-4,8],[7,8],[15,10],[-10,17],[2,17],[13,18]];
+      housePos.forEach((q,k)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(6.2,11+((seg+k+li)%5)*2.5,6.2),mat(k%3===0?0x79a7b8:0x6797ac));b.position.set(q[0],6,q[1]);b.castShadow=true;b.receiveShadow=true;g.add(b)});
+      const commerce=new THREE.Mesh(new THREE.BoxGeometry(8,5.2,38),mat(0x789b99));commerce.position.set(-18,3.6,0);commerce.castShadow=true;commerce.receiveShadow=true;g.add(commerce);
+      const court=new THREE.Mesh(new THREE.BoxGeometry(10,.35,12),mat(0x526c61));court.position.set(1,3.05,0);court.receiveShadow=true;g.add(court);
     }
   });
 
   const serviceLevel=3, serviceY=levelYs[serviceLevel], serviceR=levelR[serviceLevel]+18;
   const sg=new THREE.Group(); groups.service.add(sg); schoolObj=sg; sg.userData={baseR:serviceR,baseA:.72};
-  box(44,3.0,58,C.service,sg,[0,0,0],'复合公共服务区','学校并不单独漂移。它与大型商业、片区医疗、体育训练、图书馆、公共办事及交通接口组成更大的服务运行段，在有限范围内整体调位。','service');
-  box(18,8,22,0x6fae80,sg,[-10,5,-13],'片区学校','公共服务运行段中的学校部分，与同组团的其他大型服务共享交通、体育和后勤接口。','service');
-  box(14,6,24,0x8ca66f,sg,[11,4,-12],'片区市场与商业','比邻里商业更大，承担跨多个生活组团的市场、餐饮和公共消费服务。','service');
-  box(14,7,13,0x78a993,sg,[-11,4.5,14],'片区医疗与公共服务','片区医疗、图书馆、公共办事等共享稳定接口。','service');
-  box(11,5,13,0x82a79c,sg,[12,3.5,15],'图书馆与公共办事','服务多个相邻生活组团的共享设施。','service');
-  const sport=new THREE.Mesh(new THREE.BoxGeometry(16,.55,20),mat(0x4f785d));sport.position.set(1,2.0,13);sport.receiveShadow=true;sg.add(sport);sport.userData={name:'片区体育训练场',desc:'学校和居民共同使用的大型体育与训练设施，是公共服务组团面积的重要组成部分。',type:'service'};interactive.push(sport);
+  box(64,3.0,76,C.service,sg,[0,0,0],'复合公共服务区','学校并不单独漂移。它与大型商业、片区医疗、体育训练、图书馆、公共办事及交通接口组成更大的服务运行段，在有限范围内整体调位。','service');
+  box(24,9,28,0x6fae80,sg,[-17,5.5,-19],'片区学校','公共服务运行段中的学校部分，与同组团的其他大型服务共享交通、体育和后勤接口。','service');
+  box(21,7,30,0x8ca66f,sg,[18,4.5,-18],'片区市场与商业','比邻里商业更大，承担跨多个生活组团的市场、餐饮和公共消费服务。','service');
+  box(21,8,18,0x78a993,sg,[-18,5,21],'片区医疗与公共服务','片区医疗、图书馆、公共办事等共享稳定接口。','service');
+  box(18,6,18,0x82a79c,sg,[19,4,22],'图书馆与公共办事','服务多个相邻生活组团的共享设施。','service');
+  const sport=new THREE.Mesh(new THREE.BoxGeometry(24,.55,28),mat(0x4f785d));sport.position.set(0,2.0,20);sport.receiveShadow=true;sg.add(sport);sport.userData={name:'片区体育训练场',desc:'学校和居民共同使用的大型体育与训练设施，是公共服务组团面积的重要组成部分。',type:'service'};interactive.push(sport);
   [1,5].forEach((li,j)=>{const a=1.55+j*2.35,r=levelR[li]+17,p=polar(r,a,levelYs[li]+3);const gg=new THREE.Group();gg.position.set(...p);gg.rotation.y=-a;groups.service.add(gg);
-    const d=new THREE.Mesh(new THREE.BoxGeometry(34,2.4,42),mat(0x669d78));d.castShadow=true;d.receiveShadow=true;gg.add(d);d.userData={name:`复合公共服务段 L${li+1}`,desc:'学校、市场、医疗、体育、图书馆等按片区组合，不是零散小建筑。',type:'service'};interactive.push(d);
+    const d=new THREE.Mesh(new THREE.BoxGeometry(52,2.4,60),mat(0x669d78));d.castShadow=true;d.receiveShadow=true;gg.add(d);d.userData={name:`复合公共服务段 L${li+1}`,desc:'学校、市场、医疗、体育、图书馆等按片区组合，不是零散小建筑。',type:'service'};interactive.push(d);
     [[-8,-9],[8,-9],[-8,9],[8,9]].forEach((q,k)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(11,5+(k%2)*2,10),mat(0x77aa86));b.position.set(q[0],4,q[1]);b.castShadow=true;gg.add(b)});
   });
 
@@ -89,6 +89,23 @@
     const p=polar(105,a,65);const v=box(120,138,15,C.void,groups.voids,p,`长期开放间隙 ${si+1}`,'上下层错位和净空共同保护的采光、通风、维修、飞行、交换与疏散空间。','void',.10);orientRadial(v,a);
   });
   groups.voids.visible=false;
+
+  const transferA=2.55, transferR=58, transferFrom=3, transferTo=4;
+  const shaftP=polar(transferR,transferA,(levelYs[transferFrom]+levelYs[transferTo])/2+2);
+  box(10,levelYs[transferTo]-levelYs[transferFrom]+16,10,0xb88bd4,groups.transfer,shaftP,'换层接口（试验）','用于测试大型运行段在长周期调度中先径向收拢、再垂直换层、再重新接入外侧骨架的可行性。此接口目前只是网页验证假设。','test',.32);
+  const transferModule=new THREE.Group(); groups.transfer.add(transferModule);
+  const tmDeck=new THREE.Mesh(new THREE.BoxGeometry(44,2.8,46),mat(0xd49bd8,{transparent:true,opacity:.78}));tmDeck.castShadow=true;tmDeck.receiveShadow=true;transferModule.add(tmDeck);
+  [[-12,-12],[0,-12],[12,-12],[-12,2],[0,2],[12,2],[-7,15],[8,15]].forEach((q,k)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(7,9+(k%3)*2,7),mat(0xc482c9,{transparent:true,opacity:.78}));b.position.set(q[0],5,q[1]);transferModule.add(b)});
+  transferModule.visible=false;
+
+  function updateTransfer(v){
+    groups.transfer.visible=document.getElementById('showTransfer').checked; transferModule.visible=groups.transfer.visible; if(!groups.transfer.visible)return;
+    const fromR=levelR[transferFrom]+15,toR=levelR[transferTo]+15; let r,y;
+    if(v<.38){const q=v/.38;r=fromR+(transferR-fromR)*q;y=levelYs[transferFrom]+2;}
+    else if(v<.68){const q=(v-.38)/.30;r=transferR;y=levelYs[transferFrom]+2+(levelYs[transferTo]-levelYs[transferFrom])*q;}
+    else{const q=(v-.68)/.32;r=transferR+(toR-transferR)*q;y=levelYs[transferTo]+2;}
+    const p=polar(r,transferA,y);transferModule.position.set(...p);transferModule.rotation.y=-transferA;
+  }
 
   function setRoute(kind){groups.routes.clear(); routeLine=null; if(kind==='none')return;
     const t=currentTime, homeShift=calcMove(t), schoolA=calcSchoolA(t), y=serviceY+10; let pts=[];
@@ -114,7 +131,7 @@
     else if(t<18.5) f=1;
     else if(t<21.5) f=1-(t-18.5)/3;
     else f=0;
-    return center+amp*.55*f;
+    return center+amp*f;
   }
   function updateTime(t){currentTime=t;
     const mv=calcMove(t),amp=getHomeAmp(); movers.forEach(g=>{const local=mv*.72+Math.sin(t*.43+g.userData.phase)*.28;const r=g.userData.baseR+local*amp;const p=polar(r,g.userData.a,levelYs[g.userData.li]+2);g.position.set(...p)});
@@ -124,23 +141,25 @@
     const delta=THREE.MathUtils.radToDeg(a-.72);document.getElementById('schoolMetric').textContent=(delta>=0?'+':'')+delta.toFixed(0)+'°';
     document.getElementById('homeAmpLabel').textContent=amp;document.getElementById('serviceAmpLabel').textContent=document.getElementById('serviceAmp').value;
     setRoute(document.getElementById('routeSelect').value);
+    updateTransfer(+document.getElementById('transferPhase').value);
   }
 
   const levelSelect=document.getElementById('levelSelect'); levelYs.forEach((_,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`L${i+1}`;if(i===3)o.selected=true;levelSelect.appendChild(o)});
   function applyView(){const mode=document.getElementById('viewMode').value,li=+levelSelect.value;
-    groups.skeleton.visible=document.getElementById('showSkeleton').checked;groups.homes.visible=document.getElementById('showHomes').checked;groups.stable.visible=document.getElementById('showStable').checked;groups.traffic.visible=document.getElementById('showTraffic').checked;groups.service.visible=document.getElementById('showService').checked;groups.industry.visible=document.getElementById('showIndustry').checked;groups.voids.visible=document.getElementById('showVoids').checked;sun.visible=document.getElementById('showSun').checked;
+    groups.skeleton.visible=document.getElementById('showSkeleton').checked;groups.homes.visible=document.getElementById('showHomes').checked;groups.stable.visible=document.getElementById('showStable').checked;groups.traffic.visible=document.getElementById('showTraffic').checked;groups.service.visible=document.getElementById('showService').checked;groups.industry.visible=document.getElementById('showIndustry').checked;groups.voids.visible=document.getElementById('showVoids').checked;sun.visible=document.getElementById('showSun').checked;groups.transfer.visible=document.getElementById('showTransfer').checked;
     scene.traverse(o=>{if(o.userData && o.userData._viewHidden){o.visible=true;o.userData._viewHidden=false}});
-    if(mode==='skeleton'){groups.homes.visible=false;groups.stable.visible=false;groups.traffic.visible=false;groups.service.visible=false;groups.industry.visible=false;groups.voids.visible=false;groups.skeleton.visible=true;}
-    if(mode==='voids'){groups.homes.visible=false;groups.stable.visible=false;groups.traffic.visible=false;groups.service.visible=false;groups.industry.visible=false;groups.skeleton.visible=true;groups.voids.visible=true;}
+    if(mode==='skeleton'){groups.homes.visible=false;groups.stable.visible=false;groups.traffic.visible=false;groups.service.visible=false;groups.industry.visible=false;groups.voids.visible=false;groups.transfer.visible=false;groups.skeleton.visible=true;}
+    if(mode==='voids'){groups.homes.visible=false;groups.stable.visible=false;groups.traffic.visible=false;groups.service.visible=false;groups.industry.visible=false;groups.transfer.visible=false;groups.skeleton.visible=true;groups.voids.visible=true;}
     if(mode==='level'){
       [groups.homes,groups.stable,groups.traffic,groups.service,groups.industry].forEach(g=>g.traverse(o=>{if(o.isMesh){const wy=new THREE.Vector3();o.getWorldPosition(wy);if(Math.abs(wy.y-levelYs[li])>15){o.visible=false;o.userData._viewHidden=true}}}));
     }
     if(mode==='section'){
       [groups.homes,groups.stable,groups.traffic,groups.service,groups.industry].forEach(g=>g.traverse(o=>{if(o.isMesh){const wp=new THREE.Vector3();o.getWorldPosition(wp);if(wp.z<0 || Math.abs(wp.z)>72){o.visible=false;o.userData._viewHidden=true}}}));
     }
+    updateTransfer(+document.getElementById('transferPhase').value);
   }
   document.querySelectorAll('#controls input[type=checkbox]').forEach(x=>x.addEventListener('change',applyView));document.getElementById('viewMode').addEventListener('change',applyView);levelSelect.addEventListener('change',applyView);document.getElementById('routeSelect').addEventListener('change',()=>setRoute(document.getElementById('routeSelect').value));
-  ['homeAmp','serviceAmp'].forEach(id=>document.getElementById(id).addEventListener('input',()=>updateTime(currentTime)));
+  ['homeAmp','serviceAmp'].forEach(id=>document.getElementById(id).addEventListener('input',()=>updateTime(currentTime)));document.getElementById('transferPhase').addEventListener('input',e=>{document.getElementById('transferLabel').textContent=Math.round(+e.target.value*100)+'%';updateTransfer(+e.target.value)});
   document.querySelectorAll('[data-cam]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.cam;if(k==='iso'){camera.position.set(210,155,230);controls.target.set(0,45,0)}if(k==='top'){camera.position.set(0,390,.01);controls.target.set(0,35,0)}if(k==='side'){camera.position.set(340,75,0);controls.target.set(0,55,0)}if(k==='home'){camera.position.set(185,96,142);controls.target.set(105,64,0)}controls.update()}));
   const timeEl=document.getElementById('time');timeEl.addEventListener('input',()=>updateTime(+timeEl.value));let playing=false,last=performance.now();document.getElementById('play').addEventListener('click',e=>{playing=!playing;e.currentTarget.textContent=playing?'Ⅱ 暂停':'▶ 播放'});
 
