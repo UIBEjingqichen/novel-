@@ -89,7 +89,7 @@ function ringShape(innerFn,outerFn,start=0,end=TAU,steps=220){
   for(let i=steps;i>=0;i--){const a=start+(end-start)*i/steps;const r=innerFn(a);pts.push([Math.cos(a)*r,Math.sin(a)*r])}
   beginPoly();pts.forEach((p,i)=>{const s=worldToScreen(p[0],p[1]);if(i===0)ctx.moveTo(...s);else ctx.lineTo(...s)});ctx.closePath();
 }
-function fillStroke(fill,stroke,width=1){if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke()}}
+function fillStroke(fill,stroke,width=1){if(fill){ctx.fillStyle=fill;ctx.fill()}const borders=document.getElementById('showBorders');if(stroke&&(!borders||borders.checked)){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke()}}
 function drawGrid(){
   ctx.save();ctx.strokeStyle=COLORS.grid;ctx.lineWidth=1;ctx.globalAlpha=.45;
   for(let r=40;r<=180;r+=20){const s=worldToScreen(0,0);ctx.beginPath();ctx.arc(s[0],s[1],r*view.scale,0,TAU);ctx.stroke()}
@@ -138,6 +138,16 @@ function drawLayer(li,t,alpha=1,projection=false,outlineOnly=false){
   ctx.restore();
 }
 function drawLowerOutline(li,t){ctx.save();ctx.globalAlpha=.8;ringShape(()=>28,a=>baseOuter(li,a));fillStroke(null,COLORS.lower,2);ctx.restore()}
+function drawSkyCorridors(){
+  ctx.save();
+  for(const a of stableAngles){
+    const half=.032,start=a-half,end=a+half;
+    ringShape(()=>28,()=>184,start,end,12);
+    ctx.fillStyle='rgba(242,215,139,.18)';ctx.fill();
+    ctx.strokeStyle='rgba(242,215,139,.72)';ctx.lineWidth=1;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
 
 function drawLabels(li,t){
   if(document.getElementById('viewMode').value==='outline')return;
@@ -160,8 +170,9 @@ function draw(){
   const li=selectedLayer(),mode=document.getElementById('viewMode').value;
   if(document.getElementById('showLower').checked&&li>0)drawLowerOutline(li-1,currentTime);
   drawLayer(li,currentTime,1,false,mode==='outline');
-  if(mode!=='outline'&&document.getElementById('showUpper').checked&&li<LEVELS-1)drawLayer(li+1,currentTime,1,true,false);
-  if(mode!=='outline')drawLabels(li,currentTime);
+  if(mode!=='outline'&&(mode==='sun'||document.getElementById('showUpper').checked)&&li<LEVELS-1)drawLayer(li+1,currentTime,1,true,false);
+  if(mode==='sun')drawSkyCorridors();
+  if(mode!=='outline'){drawStableAndTraffic(li);drawCore(li);drawLabels(li,currentTime);}
   drawSunLegend(li);drawProfile();
 }
 
