@@ -35,7 +35,7 @@
 <body>
 <div id="app">
   <div id="scene"></div>
-  <div id="header"><h1>岐轮城 · 三维运行验证器</h1><p>结构沙盘 v0.3 · 复合生活组团 / 组合外环验证 · 几何数量不反向成为正典</p></div>
+  <div id="header"><h1>岐轮城 · 三维运行验证器</h1><p>结构沙盘 v0.4 · 复合生活组团 / 可组合运行段 / 换层试验 · 几何数量不反向成为正典</p></div>
   <aside id="controls" class="panel">
     <div class="section">
       <div class="section-title">观察模式</div>
@@ -48,7 +48,7 @@
     <div class="section">
       <div class="section-title">显示内容</div>
       <label class="toggle">中央定轴与环架 <input id="showSkeleton" type="checkbox" checked></label>
-      <label class="toggle">普通可迁住宅 <input id="showHomes" type="checkbox" checked></label>
+      <label class="toggle">普通生活组团 <input id="showHomes" type="checkbox" checked></label>
       <label class="toggle">固定辐向住宅带 <input id="showStable" type="checkbox" checked></label>
       <label class="toggle">主干交通带 <input id="showTraffic" type="checkbox" checked></label>
       <label class="toggle">学校与公共服务 <input id="showService" type="checkbox" checked></label>
@@ -60,9 +60,16 @@
       <div class="section-title">运行试算参数</div>
       <label class="toggle">生活组团径向伸缩 <span class="metric"><b id="homeAmpLabel">11</b> u</span></label>
       <input id="homeAmp" type="range" min="0" max="22" step="1" value="11">
-      <label class="toggle">公共服务区摆动幅度 <span class="metric"><b id="serviceAmpLabel">38</b>°</span></label>
-      <input id="serviceAmp" type="range" min="8" max="70" step="1" value="38">
-      <div class="note" style="margin-top:8px">这两个数值是验证参数，不是正典数值。用于观察何时会破坏通勤、邻里连续性与采光。</div>
+      <label class="toggle">公共服务区本地摆动 <span class="metric">±<b id="serviceAmpLabel">24</b>°</span></label>
+      <input id="serviceAmp" type="range" min="4" max="45" step="1" value="24">
+      <div class="note" style="margin-top:8px">这些数值是验证参数，不是正典数值。公共服务区的滑杆现在表示实际最大摆动角，不再暗中缩小。</div>
+    </div>
+    <div class="section">
+      <div class="section-title">长周期换层试验</div>
+      <label class="toggle">显示组合运行段换层 <input id="showTransfer" type="checkbox"></label>
+      <label class="toggle">换层进度 <span class="metric"><b id="transferLabel">0%</b></span></label>
+      <input id="transferPhase" type="range" min="0" max="1" step="0.01" value="0">
+      <div class="note" style="margin-top:8px">验证性假设：运行段先向内收拢到换层接口，再垂直移动，最后接入另一高度。仅用于测试“外环必须是组合结构”是否更合理。</div>
     </div>
     <div class="section">
       <div class="section-title">居民路径</div>
@@ -72,16 +79,16 @@
     <div class="section">
       <div class="section-title">图例</div>
       <div class="legend">
-        <span class="sw" style="background:#8796a5"></span><span>固定骨架 / 环架</span>
+        <span class="sw" style="background:#8796a5"></span><span>固定细骨架 / 环轨 / 接口</span>
         <span class="sw" style="background:#5e93ad"></span><span>普通生活组团（住宅 + 日常商业 + 社区服务）</span>
-        <span class="sw" style="background:#d7b36b"></span><span>固定辐向住宅带（高稳定）</span>
+        <span class="sw" style="background:#d7b36b"></span><span>固定辐向住宅带（低密度、高稳定）</span>
         <span class="sw" style="background:#34495e"></span><span>主干交通净空</span>
         <span class="sw" style="background:#77b989"></span><span>复合公共服务区（学校 + 商业 + 医疗 + 体育等）</span>
         <span class="sw" style="background:#a8766b"></span><span>生产物流</span>
         <span class="sw" style="background:#6fe8ff55"></span><span>受保护采光与交换空隙</span>
       </div>
     </div>
-    <div class="section note">正典约束：闭合的是承力骨架与轨道，不是完整实体外环；生活环群本身包含住宅、日常商业和社区服务；学校与大型商业、医疗、体育等组成较大的公共服务运行段；各运行段只做局部迁位。</div>
+    <div class="section note">正典约束：固定的是承力骨架、辐桥、主干轨道与接口，不把外围画成不可拆的实体巨环；生活环群本身包含住宅、日常商业和社区服务；学校与大型商业、医疗、体育等组成较大的公共服务运行段。紫色换层机构仅为验证性推演。</div>
   </aside>
   <div id="timeline" class="panel"><button id="play" class="btn primary">▶ 播放</button><span id="timeLabel">07:30</span><input id="time" class="grow" type="range" min="0" max="24" step="0.05" value="7.5"><span class="metric">住宅伸缩 <b id="moveMetric">0%</b></span><span class="metric">公共服务区位置 <b id="schoolMetric">中段</b></span></div>
   <div id="hoverCard"></div>
